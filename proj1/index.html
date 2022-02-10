@@ -1,7 +1,193 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Zhenhang Nie, CS184-3032739828</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, I implemented a simple rasterizer, including the following features: drawing triangles, supersampling, hierarchical transforms, barycentric interpolation by using the barycentric coordinates, "Pixel sampling" for texture mapping and "Level sampling" with mipmaps for texture mapping. The "Level sampling" with mipmaps for texture mapping will help antialiasing in texture mapping with more cost-effective than supersampling. One of the most important thing in this project is to round up and clip color value to the range of 0 - 255 in the resolve to framebuffer era, to clip the level value for preventing overflow in the sample_nearest function and the sample_bilinear function, </p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+<p>To implement this function, I first find the anti-clockwise order of the three vertex, then calculate the minimum value and maximum value of the x and y coordinate value from the three triangle vertex's coordinate value, this approach help me get the bounding box of the triangle. For each pixel sample in the bounding box of the triangle, along the anti-clockwise order of the three vertex, I check whether all of the three L() function introduced in lecture 2 are greater or equal than zero. If greater than zero, than the pixel sample is in the triangle, fill it with the given color. If equal to zero, than check whether the L() function of that specific edge for a predefined specific off screen vertex are greater than zero, If greater than zero, fill it with the given color. This approach make sure that all of the vertexs which are on the edge are filled by one of the intersection triangle, avoid the "hole problem" and the "overlap filling problem". Following is the screenshot of my render effect:</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/screenshot_2-6_12-13-35.png" align="middle" width="400px"/>
+        <figcaption align="middle"></figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+<p> To implement the supersampling function, first of all I change the size of the sample_buffer to (width * height * sample_rate), each pixel occupy a continuous sample_rate count of color data. Second, let n = sqrt(sample_rate), for each pixel, I sample equality n x n positions. The help rasterize_triangle_help function sample one of the n x n positions for each pixel in the bounding box of the triangle. We call the help rasterize_triangle_help function n x n times to sample all of of the n x n positions for each pixel in the bounding box of the triangle. Let one of the n x n sample position to be (i th position, j th position), than for the pixel locate at (x, y), the sample position is (x + (2 * i - 1) / (2 * n ),  y + (2 * j - 1) / (2 * n )), the sample data will store at the [(y * width + x) * sample_rate + j * n + i] position of the sample_buffer. I modify the fill_pixel function to fill the specific color value into all of the n x n store location start from [(y * width + x) * sample_rate] for the pixel whose coordinate is (x, y). In the resolve_to_framebuffer function, for each pixel we calculate the average color value from these n x n sample color value.. The supersampling algorithm attenuate the frequencies above the Nyquist frequency, it get the effect of antialias and improve the quality of the render triangle. Following is the screenshot of the antialias effect when I apply the supersample algorithm:</p>
+
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/screenshot_2-7_11-25-9.png" align="middle" width="400px" />
+                <figcaption align="middle">The sample rates is 1 when I apply the supersample algorithm.</figcaption>
+            </td>
+            <td>
+                <img src="images/screenshot_2-7_11-25-20.png" align="middle" width="400px" />
+                <figcaption align="middle">The sample rates is 4 when I apply the supersample algorithm.</figcaption>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="images/screenshot_2-7_11-25-39.png" align="middle" width="400px" />
+                <figcaption align="middle">The sample rates is 16 when I apply the supersample algorithm.</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p> In the above example, when the sample rates increase, the antialias effect dramatically in the triangle corner. Because in the triangle corner the rgb pixel value is the average value of the supersample pixel, so these results are observed in the triangle corner. </p>
+
+<h3 align="middle">Part 3: Transforms</h3>
+<p>Following is the screenshot of the effect when I apply the transforms:</p>
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/screenshot_2-7_11-58-36.png" align="middle" width="400px" />
+                <figcaption align="middle">The robot is waving and dancing.</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+<p> The barycentric coordinates is a coordinate for triangle, Each coordinate value of one pixel point in the barycentric coordinate represent a proportional distance of the distance between one vertex and its opposite side edge and the distance between this pixel point and that opposite side edge. The barycentric coordinates can be used to linearly interpolate values at vertices, texture coordinates, color, normal vectors and material attributes. Following is an example of apply barycentric coordinates to interpolate values at color:</p>
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/screenshot_2-7_12-16-14.png" align="middle" width="400px" />
+                <figcaption align="middle">Apply barycentric coordinates to interpolate values at color.</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p>Following is the screenshot of the effect when I apply the barycentric coordinates to interpolate values at color:</p>
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/screenshot_2-7_12-40-13.png" align="middle" width="400px" />
+                <figcaption align="middle"></figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+
+<p> For each pixel in the triangle, we can calculate the barycentric coordinate of this pixel. Along with the three texture mapping coordinate of the three vertex of the triangle, we can apply the barycentric coordinates to interpolate values at vertices position and calculate the correspond texture coordinate of this pixel. After we calculate the correspond texture coordinate of the pixel in triangle, we get a continuous float point texture coordinate values. But the texture only has color values on the discrete integer texture coordinate point. So that we should use a pixel sampling method to calculate the color value of the continuous float point texture coordinate using the color values on the neighboring discrete integer texture coordinate points. There are two kind of pixel sampling method: the nearest sampling method and the bilinear sampling method. The nearest sampling method use four neighboring discrete integer texture coordinate points as the candidate texture coordinate points, and find which of these four discrete integer texture coordinate points are the nearest discrete integer texture coordinate point from the mapping continuous float point texture coordinate point and set the color of that discrete integer texture coordinate point as the color of the mapping continuous float point texture coordinate point as well as the color of the pixel in the triangle. The bilinear sampling method first use 1D the linear interpolation to interpolation two intermediate color values along one axis of the texture coordinate by using two pair of the neighboring discrete integer texture coordinate point, each pair of neighboring discrete integer texture coordinate point are along the current axis of the texture coordinate, and then use 1D the linear interpolation to interpolation the color value of the mapping continuous float point texture coordinate point along the other axis of the texture coordinate by using the two two intermediate color values we just intepolation. The color value of the mapping continuous float point texture coordinate point we intepolation at the second step are also the color of the pixel in the triangle. </p>
+<p> To impletement the two kind of pixel sampling method, in the rasterize_textured_triangle function for each pixel in the triangle we calculate its correspond mapping continuous float point texture coordinate point values by applying the barycentric coordinates to interpolate values at vertices position. Then in the Texture::sample_nearest function we implement and calculate the color value of the continuous float point texture coordinate by applying the nearest sampling method, in the Texture::sample_bilinear function we implement and calculate the color value of the continuous float point texture coordinate by applying the bilinear sampling method. </p>
+<p> Following is the screenshot of the render effect when I apply the pixel sampling method: </p>
+
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/screenshot_2-8_16-21-0.png" align="middle" width="400px" />
+                <figcaption align="middle">nearest sampling at 1 sample per pixel.</figcaption>
+            </td>
+            <td>
+                <img src="images/screenshot_2-8_16-21-17.png" align="middle" width="400px" />
+                <figcaption align="middle">nearest sampling at 16 samples per pixel.</figcaption>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="images/screenshot_2-8_16-21-41.png" align="middle" width="400px" />
+                <figcaption align="middle">bilinear sampling at 1 sample per pixel.</figcaption>
+            </td>
+            <td>
+                <img src="images/screenshot_2-8_16-21-56.png" align="middle" width="400px" />
+                <figcaption align="middle">bilinear sampling at 16 samples per pixel.</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p> From the above render effect we can see that: when the mapping continuous float point texture coordinate point are neighbor to the four neighboring discrete integer texture coordinate point whose color values are change dramatically, the bilinear sampling clearly defeats nearest sampling and there will be a large difference between the two methods. The reason is that because the bilinear sampling method smooth the dramatically change of the color values of the four neighboring discrete integer texture coordinate point. </p>
+<p> We also see that: as the sample rate increase, the nearest sampling method’s effect will also improve. </p>
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+<p> The level sampling is used to antialiasing the texture minification case. It first take texture image file, low-pass filter it and filter out high frequencies and downsample it recursively and store successively lower resolution each with successively lower maximum signal frequency. Then for each sample, use texture file whose resolution approximates the screeb sampling rate. To implement the level sampling algorithm, I do the following thing: 1. Calculate the uv barycentric coordinates of (x,y)(x,y), (x+1,y)(x+1,y), and (x,y+1)(x,y+1) in rasterize_textured_triangle(...) as sp.p_uv, sp.p_dx_uv, and sp.p_dy_uv, assign them to a SampleParams struct sp, along with other values required by the struct, and pass sp to Texture::get_level. 2. Calculate the difference vectors sp.p_dx_uv - sp.p_uv and sp.p_dy_uv - sp.p_uv inside Texture::get_level, and finally 3. Scale up the difference vectors accordingly by the width and height of the full-resolution texture image. After do this we can calculate the L function value and the D value introduced in the lecture and then get the level of the current pixel sampling. In the Texture::sample function, I implement the D rounded to nearest integer level sampling method and the linear interpolation based on continuous D value level sampling method. The sumper sampling method get the best antialiasing power but require the most memory usage and its speed are slowest. The mipmap level that use the nearest sampling algorithm only antialiasing the texture minification case but not antialiasing the texture magnification case, so its memory usage and speed is better than the supersample method but its antialiasing power is worse than the supersample method.  The mipmap level that use the bilinear sampling algorithm antialiasing both the texture minification case and also the texture magnification case, so its memory usage and speed is better than the supersample method and its antialiasing power is just slightly worse than the supersample method. </p>
+<p> Following is the screenshot of the render effect when I apply the level sampling method: </p>
+
+
+<div align="middle">
+    <table style="width=100%">
+        <tr>
+            <td>
+                <img src="images/screenshot_2-9_11-36-1.png" align="middle" width="400px" />
+                <figcaption align="middle">The render effect of the combinations of L_ZERO and P_NEAREST.</figcaption>
+            </td>
+            <td>
+                <img src="images/screenshot_2-9_11-36-26.png" align="middle" width="400px" />
+                <figcaption align="middle">The render effect of the combinations of L_ZERO and P_LINEAR.</figcaption>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <img src="images/screenshot_2-9_11-36-39.png" align="middle" width="400px" />
+                <figcaption align="middle">The render effect of the combinations of L_NEAREST and P_NEAREST.</figcaption>
+            </td>
+            <td>
+                <img src="images/screenshot_2-9_11-36-56.png" align="middle" width="400px" />
+                <figcaption align="middle">The render effect of the combinations of L_NEAREST and P_LINEAR.</figcaption>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<p> From the above render effect we can see that: when we apply the mipmap level that use the bilinear sampling algorithm, the antialiasing is best. This is because the mipmap level that use the bilinear sampling algorithm antialiasing both the texture minification case and also the texture magnification case. </p>
+
+
+</body>
 </html>

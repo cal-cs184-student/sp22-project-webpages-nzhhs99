@@ -1,7 +1,390 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>
+  <title>CS 184 Mesh Editor</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2020</h1>
+  <h1 align="middle">Project 2: Mesh Editor</h1>
+  <h2 align="middle">Zhenhang Nie, CS184-3032739828</h2>
+
+  <br><br>
+
+      <div>
+
+          <h2 align="middle">Overview</h2>
+          <p>In this project, I implemented the algorithm to build Bezier curves and surfaces using de Casteljau algorithm, including Bezier Curves with 1D de Casteljau Subdivision algorithm, Bezier Surfaces with Separable 1D de Casteljau Subdivision algorithm. I also implemented how to manipulate triangle meshes represented by half-edge data structure, including area-weighted normal vectors at vertices, Edge Flip operator algorithm and Edge Split operator algorithm. At last, I also implemented Loop Subdivision for Mesh Upsampling.  During the time I completed the project, one import thing are to keeping the pointer in the vertex, edge, face and half edge point to correct thing in the Edge Flip operator algorithm and Edge Split operator algorithm. The other import thing are not to do Edge Flip  operator for the old edge in the Loop Subdivision for Mesh Upsampling. That is: only to do Edge Flip operator for the new edge that connects an old vertex and a new vertex which are inserted during the edge split operator.</p>
+
+          <h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+          <h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+          <p>In order to implement the Bezier Curves with 1D de Casteljau Subdivision algorithm, I first implemented the lerp function for the Vector2D data structure in the file student_code.cpp, then in the function evaluateStep, for each new point p'(i) (The value of i are in the range of 1 to n-1), p'(i) = lerp(p(i), p(i+1), t).</p>
+          <p>Following is the screenshot of the effect after I implement the Bezier Curves with 1D de Casteljau Subdivision algorithm:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/1.png" align="middle" width="400px" />
+                          <figcaption align="middle">The original 6 control point.</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/2.png" align="middle" width="400px" />
+                          <figcaption align="middle">Step 1 level of the evaluation from the original control points down to the final evaluated point.</figcaption>
+                      </td>
+                  </tr>
+                  <br />
+                  <tr>
+                      <td>
+                          <img src="images/3.png" align="middle" width="400px" />
+                          <figcaption align="middle">Step 2 level of the evaluation from the original control points down to the final evaluated point.</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/4.png" align="middle" width="400px" />
+                          <figcaption align="middle">Step 3 level of the evaluation from the original control points down to the final evaluated point.</figcaption>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <img src="images/5.png" align="middle" width="400px" />
+                          <figcaption align="middle">Step 4 level of the evaluation from the original control points down to the final evaluated point.</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/6.png" align="middle" width="400px" />
+                          <figcaption align="middle">Step 5 level of the evaluation from the original control points down to the final evaluated point.</figcaption>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <img src="images/7.png" align="middle" width="400px" />
+                          <figcaption align="middle">The completed Bezier curve.</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/8.png" align="middle" width="400px" />
+                          <figcaption align="middle">Moving the original control points around.</figcaption>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <img src="images/9.png" align="middle" width="400px" />
+                          <figcaption align="middle">Decrease the value of t to near zero.</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/10.png" align="middle" width="400px" />
+                          <figcaption align="middle">Increase the value of t to near one.</figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+
+
+          <h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+
+          <p>
+              In order to make the de Casteljau algorithm extends to Bezier surfaces, I first implemented the lerp function for the Vector3D data structure in the file student_code.cpp, then in the Vector3D's version function evaluateStep, for each new point p'(i) (The value of i are in the range of 1 to n-1), p'(i) = lerp(p(i), p(i+1), t).
+              The evaluate1D function call the evaluateStep n - 1 time for n - 1 step level of the evaluation from the original control points down to the final evaluated point, the result one evaluation point are exactly the final evaluated point. the 2D evaluate function first call the evaluate1D function for each row in the two dimension controlPoints along one axis using the value of u as the value of t, get a list of evaluation point. At last call the evaluate1D function to get the final evaluated point from the previous calculated evaluation point list using the value of v as the value of t.
+          </p>
+          <p>Following is the screenshot of the effect after I implement the Bezier Surfaces with Separable 1D de Casteljau by making the de Casteljau algorithm extends to Bezier surfaces:</p>
+
+
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/11.png" align="middle" width="400px" />
+                          <figcaption align="middle"></figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+
+
+
+          <h2 align="middle">Section II: Sampling</h2>
+
+          <h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+          <p>In order to implement the area-weighted normal vectors at vertices algorithm, I first implement the function area to calculate the area of the triangle whose three vertex can be traversalled by the halfedge. Second, I implement the function normal to calculate the normal vector which perpendicular to the triangle face whose three vertex can be traversalled by the halfedge by accumulate the cross product of the three pair of adjacent vertice of the triangle. Finally, in the function normal located at the file student_code.cpp, I traversal all the adjacent triangle face of the vertex and accumulate the (area x normal vector) for each triangle,  the uniform of the final accumulate result normal vector is the area-weighted normal vector of the vertex.</p>
+          <p>Following is the screenshot of the effect after I implement the area-weighted normal vectors at vertices algorithm:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/12.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect before I press the 'Q' key to smooth the surfaces</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/13.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I press the 'Q' key to smooth the surfaces</figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+
+
+          <h3 align="middle">Part 4: Half-edge flip</h3>
+          <p>In order to implement the Edge flip algorithm, assume that we flip the edge bc as the following picture:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/14.png" align="middle" width="400px" />
+                          <figcaption align="middle"></figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+          <p>
+              in the function flipEdge I make a series of pointer reassignment as below:<br />
+              Set the next of the half edge ad to dc.<br />
+              Set the twin of the half edge ad to da.<br />
+              Set the root vertex of the half edge ad to a.<br />
+              Set the face of the half edge ad to adc(The face abc before edge flip).<br />
+              Set the next of the half edge da to ab.<br />
+              Set the twin of the half edge da to ad.<br />
+              Set the root vertex of the half edge da to d.<br />
+              Set the face of the half edge da to dab(The face dcb before edge flip).<br />
+              Set the half edge of the vertex b to the half edge bd.<br />
+              Set the half edge of the vertex c to the half edge ca.<br />
+              Set the next of the half edge ab to bd.<br />
+              Set the next of the half edge dc to ca.<br />
+              Set the next of the half edge ca to ad.<br />
+              Set the next of the half edge bd to da.<br />
+              Set the half edge of the face adc to the half edge ad.<br />
+              Set the half edge of the face dab to the half edge da.<br />
+              Set the face of the half edge dc to adc(The face abc before edge flip).<br />
+              Set the face of the half edge ab to dab(The face dcb before edge flip).<br />
+          </p>
+          <p>Following is the screenshot of the effect after I implement the Edge Flip algorithm:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/15.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect before I make the edge flip opreator</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/16.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make the edge flip opreator</figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+
+
+          <h3 align="middle">Part 5: Half-edge split</h3>
+          <p>In order to implement the Edge flip algorithm, assume that we split the edge bc as the following picture:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/17.png" align="middle" width="400px" />
+                          <figcaption align="middle"></figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+          <p>
+              in the function splitEdge I add new vertex, two new triangle faces, three new edges, six new halfedge and make a series of pointer reassignment as below:<br />
+              Set the half edge bm to the halfedge bc.<br />
+              Set the half edge mb to the halfedge cb.<br />
+              Set the edge bm to the edge bc.<br />
+              Set the face bma to the face bca.<br />
+              Set the face dmb to the face cbd.<br />
+              <br />
+              Add a new vertex m and set it's position to the midpoint of b and c.<br />
+              <br />
+              Add a new face cma.<br />
+              Add a new face dmc.<br />
+              <br />
+              Add a new edge am.<br />
+              Add a new edge cm.<br />
+              Add a new edge dm.<br />
+              <br />
+              Add a new half edge am.<br />
+              Add a new half edge ma.<br />
+              Add a new half edge cm.<br />
+              Add a new half edge mc.<br />
+              Add a new half edge dm.<br />
+              Add a new half edge md.<br />
+              <br />
+              Set the next of the half edge am to the half edge mc.<br />
+              Set the twin of the half edge am to the half edge ma.<br />
+              Set the root vertex of the half edge am to the vertex a.<br />
+              Set the edge of the half edge am to the edge am.<br />
+              Set the face of the half edge am to the face cma.<br />
+              <br />
+              Set the next of the half edge ma to the half edge ab.<br />
+              Set the twin of the half edge ma to the half edge am.<br />
+              Set the root vertex of the half edge ma to the vertex m.<br />
+              Set the edge of the half edge ma to the edge am.<br />
+              Set the face of the half edge ma to the face bma.<br />
+              <br />
+              Set the next of the half edge bm to the half edge ma.<br />
+              Set the twin of the half edge bm to the half edge mb.<br />
+              Set the root vertex of the half edge bm to the vertex b.<br />
+              Set the edge of the half edge bm to the edge bm.<br />
+              Set the face of the half edge bm to the face bma.<br />
+              <br />
+              Set the next of the half edge mb to the half edge bd.<br />
+              Set the twin of the half edge mb to the half edge bm.<br />
+              Set the root vertex of the half edge mb to the vertex m.<br />
+              Set the edge of the half edge mb to the edge bm.<br />
+              Set the face of the half edge mb to the face dmb.<br />
+              <br />
+              Set the next of the half edge cm to the half edge md.<br />
+              Set the twin of the half edge cm to the half edge mc.<br />
+              Set the root vertex of the half edge cm to the vertex c.<br />
+              Set the edge of the half edge cm to the edge cm.<br />
+              Set the face of the half edge cm to the face dmc.<br />
+              <br />
+              Set the next of the half edge mc to the half edge ca.<br />
+              Set the twin of the half edge mc to the half edge cm.<br />
+              Set the root vertex of the half edge mc to the vertex m.<br />
+              Set the edge of the half edge mc to the edge cm.<br />
+              Set the face of the half edge mc to the face cma.<br />
+              <br />
+              Set the next of the half edge dm to the half edge mb.<br />
+              Set the twin of the half edge dm to the half edge md.<br />
+              Set the root vertex of the half edge dm to the vertex d.<br />
+              Set the edge of the half edge dm to the edge dm.<br />
+              Set the face of the half edge dm to the face dmb.<br />
+              <br />
+              Set the next of the half edge md to the half edge dc.<br />
+              Set the twin of the half edge md to the half edge dm.<br />
+              Set the root vertex of the half edge md to the vertex m.<br />
+              Set the edge of the half edge md to the edge dm.<br />
+              Set the face of the half edge md to the face dmc.<br />
+              <br />
+              Set the half edge of the edge am to the half edge am.<br />
+              Set the half edge of the edge bm to the half edge bm.<br />
+              Set the half edge of the edge cm to the half edge cm.<br />
+              Set the half edge of the edge dm to the half edge dm.<br />
+              <br />
+              Set the half edge of the vertex m to the half edge mb.<br />
+              <br />
+              Set the half edge of the face bma to the half edge bm.<br />
+              Set the half edge of the face dmb to the half edge mb.<br />
+              Set the half edge of the face cma to the half edge mc.<br />
+              Set the half edge of the face dmc to the half edge cm.<br />
+              <br />
+              Set the next of the half edge ca to the half edge am.<br />
+              Set the next of the half edge ab to the half edge bm.<br />
+              Set the next of the half edge bd to the half edge dm.<br />
+              Set the next of the half edge dc to the half edge cm.<br />
+              <br />
+              Set the face of the half edge ca to the face cma.<br />
+              Set the face of the half edge ab to the face bma.<br />
+              Set the face of the half edge bd to the face dmb.<br />
+              Set the face of the half edge dc to the face dmc.<br />
+              <br />
+              Set the isNew flag of the edge am to true.<br />
+              Set the isNew flag of the edge dm to true.<br />
+          </p>
+
+
+          <p>Following is the screenshot of the effect after I implement the Edge Split algorithm:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/18.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect before I make some edge splits opreator</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/19.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make some edge splits opreator</figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/18.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect before I make a combination of both edge splits and edge flips opreator</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/20.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make a combination of both edge splits and edge flips opreator</figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+
+          <h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+          <p>In order to implement the Loop Subdivision for Mesh Upsampling algorithm, first of all, I define the should_flip function to judge whether an edge connects an old vertex and a new vertex. I also define the calculate_u function to calculate the value of u according to n, the degree of an vertex. I define the compute_original_neighbor_position_sum function to calculate sum of all original positions of the neighboring vertices for a specific vertex. I define the function compute_old_vertex_new_position to calculate the updated position of an old vertex ( (1 - n * u) * original_position + u * original_neighbor_position_sum ) and define the function compute_new_vertex_new_position to calculate the position of a new vertex splitting the shared edge (A,B) between a pair of triangle (A, C, B) and (A, B, D) ( 3/8 * (A + B) + 1/8 * (C + D) ). In the function upsample, I do the following things: 1. Compute new positions for all the vertices in the input mesh, using the Loop subdivision rule, and store them in Vertex::newPosition. At this point, we also want to mark each vertex as being a vertex of the original mesh. 2. Compute the updated vertex positions associated with edges (the updated vertex positions of the midpoint of the edges), and store it in Edge::newPosition. 3. Split every edge in the mesh, in any order. For future reference, we're also going to store some information about which subdivide edges come from splitting an edge in the original mesh, and which edges are new, by setting the flat Edge::isNew. Note that in this loop, we only want to iterate over edges of the original mesh---otherwise, we'll end up splitting edges that we just split (and the loop will never end!). 4. Flip any new edge that connects an old and new vertex. 5. Copy the new vertex positions into final Vertex::position.</p>
+          <p>Following is the screenshot of the effect after I implement the Loop Subdivision for Mesh Upsampling algorithm:</p>
+          <div align="middle">
+              <table style="width=100%">
+                  <tr>
+                      <td>
+                          <img src="images/21.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect before I make the Loop Subdivision opreator</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/22.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make 1 iterations of the Loop Subdivision opreator</figcaption>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <img src="images/23.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make 2 iterations of the Loop Subdivision opreator</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/24.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make 3 iterations of the Loop Subdivision opreator</figcaption>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <img src="images/25.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make 4 iterations of the Loop Subdivision opreator</figcaption>
+                      </td>
+                      <td>
+                          <img src="images/26.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make 5 iterations of the Loop Subdivision opreator</figcaption>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>
+                          <img src="images/27.png" align="middle" width="400px" />
+                          <figcaption align="middle">The effect after I make 6 iterations of the Loop Subdivision opreator</figcaption>
+                      </td>
+                  </tr>
+              </table>
+          </div>
+
+
+          <h2 align="middle">Section III: Optional Extra Credit</h2>
+          <p>If you are not participating in the optional mesh competition, don't worry about this section!</p>
+
+          <h3 align="middle">Part 7: Design your own mesh!</h3>
+
+      </div></body>
+
 </html>

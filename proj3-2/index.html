@@ -1,7 +1,465 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Zhenhang Nie  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+    <br />
+    <h1 align="middle">Assignment 3-2: PathTracer</h1>
+    <h2 align="middle">Zhenhang Nie, CS184-3032739828</h2>
+
+    <div class="padded">
+        <p>In this project, I implemented Part 1, Part 2 and Part4. These are: the mirror and glass models with both reflection and refraction, I also implemented the microfacet model, specifically, isotropic rough conductors that only reflect. At last, I implemented the function Camera::generate_ray_for_thin_lens to simulate a thin lens to enable the depth of field effect. Now I can render all sorts of fancy materials with any camera angle and focus depth. In order to implement these function, I debug and solve several logic-relate, calculation-relate and number value-relate problem.</p>
+
+        <h2 align="middle">Part 1: Mirror and Glass Materials</h2>
+        <p>In my implement of the BSDF::reflect() function, I calculate the direction of the incident light wi as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/1.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>In my implement of the MirrorBSDF::sample_f function, I call the reflect function to calculate the direction of the incident light and set the pdf to 1. The reflect coefficient that I return in this function is as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/2.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>In my implement of the BSDF::refract function, first of all, I calculate the value of eta as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/3.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>If the value of the following function is negative, the BSDF::refract function return false value.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/4.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Otherwise, the x, y, and z value of the direction of the incident light can be calculated as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/5.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>In my implement of the RefractionBSDF::sample_f function, I call the refract function to calculate the direction of the incident light and set the pdf to 1. If the refract function return false, the refract coefficient that I return in this function is zero (Vector3D() in the code), otherwise, the refract coefficient that I return in this function is as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/6.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p>In my implement of the GlassBSDF::sample_f function, I first call the refract function to check whether there is total internal reflection, if the refract function return false, then it is total internal reflection, at this situation, I call the reflect function to calculate the direction of the incident light and set the pdf to 1. The reflect coefficient that I return in this function is as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/2.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Otherwise, I Compute Schlick's reflection coefficient R as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/7.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Then I call the coin_flip(R), if coin_flip(R) return the true value, then we process as reflection, I call the reflect function to calculate the direction of the incident light and set the pdf to R. The reflect coefficient that I return in this function is as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/8.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Otherwise we process as refraction,  I call the refract function to calculate the direction of the incident light and set the pdf to 1 - R. the refract coefficient that I return in this function is as below:</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/9.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Following is the screenshot of the effect after a implement the above Mirror Materials model and Glass Materials model (with 4 light rays (the -l flag) and with 64 sample per pixel (the -s flag):</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_0.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 0</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_1.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 1</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_2.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 2</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <table>
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_3.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 3</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_4.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 4</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_5.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 5</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBspheres_64_4_100.png" width="100%" />
+                        <figcaption align="middle">max_ray_depth = 100</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>In the above effect, the zero bounce contribute to the area light effect, the one bounce contribute to the wall and floor diffuse reflect from the area light effect, the two bounce contribute to the mirror reflect from the area light, the wall and the floor effect, the three bounce contribute to the glass reflect and refract from the area light, the wall and the floor effect, the four bounce contribute to the mirror's blue sphere reflect from the glass, the five and above bounce contribute to the enhance global light.</p>
+
+        <h2 align="middle">Part 2: Microfacet Materials</h2>
+
+        <div style="float:left">
+            In my implement of the MicrofacetBSDF::f function, I first check if
+        </div>
+        <div style="float:left">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/11.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div style="float:left">
+            and
+        </div>
+        <div style="float:left">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/12.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div style="float:left">
+            are valid. (both
+        </div>
+        <div style="float:left">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/13.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div style="float:left">
+            and
+        </div>
+        <div style="float:left">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/14.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="float:left">
+            ​​should be greater than zero).
+        </div>
+        <div style="float:left">
+            If not, the function should return zero.(Vector3D in the code). Otherwize, the function should call the MicrofacetBSDF::F() function, MicrofacetBSDF::G() function and the MicrofacetBSDF::D() function to calculate the Microfacet BRDF as below:
+        </div>
+        <div style="clear:both" align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/15.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Here, h can be calculated as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/16.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p>In my implement of the MicrofacetBSDF::D() function, I calculate the value of D(h) as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/17.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Here we have:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/18.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p>In my implement of the MicrofacetBSDF::F() function, I first calculate the value of Rs and Rp as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/19.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>The return value of the function MicrofacetBSDF::F() function is the average of Rs and Rp we had just calculate as above.</p>
+        <p>In my implement of the MicrofacetBSDF::sample_f() function, I first call the sampler.get_sample() function to sample the two value r1 and r2, than we can calculate the two angle as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/20.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>With these two angle, we can calculate the x, y and z value of the half vector of the incident light direction (wi) and the outgoing light direction (wo) as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/21.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Once we calculate the half vector h, the direction of the incident light can be calculated as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/22.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>The probability density function (pdf) can be calculated as below:</p>
+        <div align="center">
+            <table>
+                <tr>
+                    <td>
+                        <img src="images/23.png" width="100%" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>Following is the screenshot of the effect after I implement the above Microfacet Materials model (with 1 light rays (the -l flag) and with 128 sample per pixel (the -s flag) and with max ray depth equal to 5 (the -m flag):</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_au_a0005_128_1_5.png" width="100%" />
+                        <figcaption align="middle">alpha value = 0.005</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_au_a0050_128_1_5.png" width="100%" />
+                        <figcaption align="middle">alpha value = 0.05</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_au_a0250_128_1_5.png" width="100%" />
+                        <figcaption align="middle">alpha value = 0.25</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_au_a0500_128_1_5.png" width="100%" />
+                        <figcaption align="middle">alpha value = 0.5</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>From the above effect we can se that: when the value of alpha is very small, the macro surface tends to glossy and the light tends to concentration. when the value of alpha is become large, the macro surface tends to diffuse and the light also tends to diffuse, the area that can reflect light become larger.</p>
+        <p>Following is the compare effect of the cosine hemisphere sampling and the Microfacet BRDF importance sampling (with 1 light rays (the -l flag) and with 128 sample per pixel (the -s flag) and with max ray depth equal to 5 (the -m flag):</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBbunny_microfacet_cos_64_1_5.png" width="100%" />
+                        <figcaption align="middle">The cosine hemisphere sampling</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBbunny_microfacet_64_1_5.png" width="100%" />
+                        <figcaption align="middle">The Microfacet BRDF importance sampling</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <p>From the above effect we can see that: The cosine hemisphere sampling is much more noisy than the Microfacet BRDF importance sampling. It has more blackspot and black block.</p>
+        <p>Following is the effect when I change the value of eta and k to the iron materials (with 1 light rays (the -l flag) and with 128 sample per pixel (the -s flag) and with max ray depth equal to 5 (the -m flag):</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_fe_a0500_128_1_5.png" width="100%" />
+                        <figcaption align="middle"></figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <h2 align="middle">Part 4: Depth of Field</h2>
+        <p>The differences between a pinhole camera model and a thin-lens camera model is that in the pinholw camera, every ray from a image object only pass through one camera pin to the image sensor, so that the expouse time is the same for all ray from the world we see. But in the thin lens, the large lens radius mean more expouse time, so that when if the ratio between the lens radius and the focal distance is two large, the image will become very blur.</p>
+        <p>In my implement of the Camera::generate_ray_for_thin_lens() function, Because the coordinate in the original image range from (0, 0) to (1, 1), bute the coordinate in the image sensor of the camera range from ( - focalDistance * tan(hFov/2), - focalDistance * tan(vFov/2) ) to ( focalDistance * tan(hFov/2), focalDistance * tan(vFov/2) ), so that we should make a coordinate transform.</p>
+        <p>Suppose that the coordinate in the original image is (x, y), then the coordinate in the image sensor of the camera is ( (x - 0.5) * 2 * focalDistance * tan(hFov/2), (y - 0.5) * 2 * focalDistance * tan(vFov/2), -focalDistance ). The ray direction in the camera space is ( (x - 0.5) * 2 * focalDistance * tan(hFov/2) - lensRadius * sqrt(rndR) * cos(rndTheta), (y - 0.5) * 2 * focalDistance * tan(vFov/2) - lensRadius * sqrt(rndR) * sin(rndTheta), -focalDistance ). So that the ray direction in the world space is c2w *  ( (x - 0.5) * 2 * focalDistance * tan(hFov/2) - lensRadius * sqrt(rndR) * cos(rndTheta), (y - 0.5) * 2 * focalDistance * tan(vFov/2) - lensRadius * sqrt(rndR) * sin(rndTheta), -focalDistance ). The origin of the ray is pos + c2w *  (lensRadius * sqrt(rndR) * cos(rndTheta), lensRadius * sqrt(rndR) * sin(rndTheta), 0 ).</p>
+        <p>Following is the screenshot of the effect after I implement the above Camera::generate_ray_for_thin_lens function to simulate a thin lens to enable the depth of field effect with the same lens radius (0.1 as the value of the -b flag) and different focal distance (with 4 light rays (the -l flag) and with 256 sample per pixel (the -s flag) and with max ray depth equal to 7 (the -m flag)::</p>
+
+
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_01_2.png" width="100%" />
+                        <figcaption align="middle">focal distance = 2</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_01_4.png" width="100%" />
+                        <figcaption align="middle">focal distance = 4</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_01_6.png" width="100%" />
+                        <figcaption align="middle">focal distance = 6</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_01_8.png" width="100%" />
+                        <figcaption align="middle">focal distance = 8</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_01_8.png" width="100%" />
+                        <figcaption align="middle">focal distance = 10</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p>Following is the screenshot of the effect after I implement the above Camera::generate_ray_for_thin_lens function to simulate a thin lens to enable the depth of field effect with the same focal distance (6.0 as the value of the -d flag) and different lens radius (with 4 light rays (the -l flag) and with 256 sample per pixel (the -s flag) and with max ray depth equal to 7 (the -m flag)::</p>
+
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_005_6.png" width="100%" />
+                        <figcaption align="middle">lens radius = 0.05</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_010_6.png" width="100%" />
+                        <figcaption align="middle">lens radius = 0.1</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_015_6.png" width="100%" />
+                        <figcaption align="middle">lens radius = 0.15</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_020_6.png" width="100%" />
+                        <figcaption align="middle">lens radius = 0.2</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_025_6.png" width="100%" />
+                        <figcaption align="middle">lens radius = 0.25</figcaption>
+                    </td>
+                    <td align="middle">
+                        <img src="images/CBdragon_microfacet_030_6.png" width="100%" />
+                        <figcaption align="middle">lens radius = 0.3</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+
+    </div></body>
 </html>
+
+
+
+
